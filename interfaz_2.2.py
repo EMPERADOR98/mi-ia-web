@@ -9,8 +9,6 @@ import tempfile
 # =========================
 # ⚙️ CONFIG
 # =========================
-# 🔗 CAMBIA ESTO por tu enlace directo de Hugging Face
-# Formato: https://huggingface.co/TU_USUARIO/TU_REPO/resolve/main/MODELO_FINAL.keras
 HF_MODEL_URL = "https://github.com/EMPERADOR98/mi-ia-web/releases/download/v1.0/MODELO_FINAL.keras"
 
 # =========================
@@ -21,14 +19,12 @@ def load_model_from_hf():
     st.info("📥 Descargando modelo desde Hugging Face...")
     
     try:
-        # Descarga con streaming para evitar timeout y permitir barra de progreso
         response = requests.get(HF_MODEL_URL, stream=True, timeout=60)
         response.raise_for_status()
         
         total_size = int(response.headers.get('content-length', 0))
         downloaded = 0
         
-        # Guardar en archivo temporal
         with tempfile.NamedTemporaryFile(delete=False, suffix=".keras") as tmp:
             progress = st.progress(0.0, text="Descargando: 0%")
             
@@ -40,28 +36,20 @@ def load_model_from_hf():
                     
             tmp_path = tmp.name
 
-        st.success("✅ Descarga completada. Cargando modelo en memoria...")
+        st.success("✅ Descarga completada. Cargando modelo...")
         model = tf.keras.models.load_model(tmp_path)
-        
-        # Liberar espacio en disco (el modelo ya está en RAM)
         os.unlink(tmp_path)
-        
-        st.success("🧠 Modelo listo y en caché de Streamlit.")
         return model
         
-    except requests.exceptions.RequestException as e:
-        st.error(f"❌ Error de red: {e}")
-        st.warning("💡 Verifica que el repositorio de HF sea PÚBLICO y la URL directa.")
-        st.stop()
     except Exception as e:
-        st.error(f"❌ Error al cargar el modelo: {e}")
+        st.error(f"❌ Error: {e}")
+        st.warning("💡 Verifica que el repo de HF sea PÚBLICO y la URL sea directa.")
         st.stop()
 
-# Cargar una sola vez gracias a @st.cache_resource
 model = load_model_from_hf()
 
 # =========================
-# 📂 CLASES
+# 📂 CLASES (192 clases de aves)
 # =========================
 class_names = [
     "Black_Footed_Albatross", "Laysan_Albatross", "Sooty_Albatross", "Groove_billed_Ani", "Crested_Auklet",
@@ -109,12 +97,7 @@ class_names = [
 # =========================
 # 🎨 CONFIG PÁGINA
 # =========================
-st.set_page_config(
-    page_title="Identificador de Aves",
-    page_icon="🐦",
-    layout="centered"
-)
-
+st.set_page_config(page_title="Identificador de Aves", page_icon="🐦", layout="centered")
 st.title("🐦 Identificador de Aves IA")
 st.write("Sube una imagen y la IA intentará identificar la especie de ave.")
 
@@ -129,19 +112,16 @@ img_file = st.file_uploader("Sube una imagen", type=["jpg", "jpeg", "png"])
 if img_file:
     image = Image.open(img_file).convert("RGB")
     st.image(image, use_container_width=True)
-
-    # 🔥 Mismo tamaño que el entrenamiento
+    
     img = image.resize((192, 192))
     img = np.array(img) / 255.0
     img = np.expand_dims(img, axis=0)
-
-    # 🧠 PREDICCIÓN
+    
     pred = model.predict(img, verbose=0)
     idx = np.argmax(pred)
     clase = class_names[idx]
     confianza = float(np.max(pred))
-
-    # 📊 RESULTADO
+    
     st.subheader(f"🧠 {clase}")
     if confianza < 0.50:
         st.warning(f"⚠️ Baja confianza: {confianza:.2%}")
@@ -149,15 +129,13 @@ if img_file:
         st.info(f"🔎 Confianza media: {confianza:.2%}")
     else:
         st.success(f"✅ Alta confianza: {confianza:.2%}")
-
+    
     st.progress(confianza)
-
-    # 🥇 TOP 5
+    
     st.write("### 🔝 Top 5 predicciones")
     top5_idx = np.argsort(pred[0])[-5:][::-1]
     for i in top5_idx:
         st.write(f"**{class_names[i]}** → {pred[0][i]*100:.2f}%")
-
-    # 📉 GRÁFICA
+    
     st.write("### 📊 Probabilidades")
     st.bar_chart(pred[0])
