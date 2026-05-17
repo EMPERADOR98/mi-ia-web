@@ -8,7 +8,7 @@ import os
 # ⚙️ CONFIG
 # =========================
 # 🔗 URL directa del modelo en GitHub Releases (¡CAMBIA ESTO!)
-MODEL_URL = "https://github.com/TU_USUARIO/TU_REPO/releases/download/v1.0/MODELO_FINAL.keras"
+MODEL_URL = "https://github.com/EMPERADOR98/mi-ia-web/releases/download/v1.0/MODELO_FINAL.keras"
 MODEL_NAME = "MODELO_FINAL.keras"  # Nombre local del archivo
 
 # =========================
